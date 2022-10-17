@@ -36,63 +36,126 @@
 
 import Foundation
 
-public class TreeNode {
-    public var val: Int
-    public var left: TreeNode?
-    public var right: TreeNode?
-    public init() { self.val = 0; self.left = nil; self.right = nil; }
-    public init(_ val: Int) { self.val = val; self.left = nil; self.right = nil; }
-    public init(_ val: Int, _ left: TreeNode?, _ right: TreeNode?) {
-        self.val = val
-        self.left = left
-        self.right = right
-    }
+class TreeNode {
+  var val: Int
+  var left: TreeNode?
+  var right: TreeNode?
+  
+  init() {
+    self.val = 0
+  }
+  
+  init(val: Int) {
+    self.val = val
+  }
+  
+  init(val: Int, left: TreeNode?, right: TreeNode?) {
+    self.val = val
+    self.left = left
+    self.right = right
+  }
 }
 
+let sample1 = TreeNode(val: 5,
+                       left: TreeNode(val: 1,
+                                      left: TreeNode(val: 3),
+                                      right: nil),
+                       right: TreeNode(val: 2,
+                                       left: TreeNode(val: 6),
+                                       right: TreeNode(val: 4)))
+
+let sample2 = TreeNode(val: 2, left: TreeNode(val: 1), right: nil)
+
+let sample3 = TreeNode(val: 1,
+                       left: nil,
+                       right: TreeNode(val: 10,
+                                       left: TreeNode(val: 12,
+                                                      left: TreeNode(val: 4),
+                                                      right: TreeNode(val: 6)),
+                                       right: TreeNode(val: 13,
+                                                       left: nil,
+                                                       right: TreeNode(val: 15,
+                                                                       left: TreeNode(val: 5,
+                                                                                      left: nil,
+                                                                                      right: TreeNode(val: 2,
+                                                                                                      left: nil,
+                                                                                                      right: TreeNode(val: 8,
+                                                                                                                      left: TreeNode(val: 3),
+                                                                                                                      right: nil)
+                                                                                                     )
+                                                                                     ),
+                                                                       right: TreeNode(val: 11,
+                                                                                       left: TreeNode(val: 14),
+                                                                                       right: TreeNode(val: 7,
+                                                                                                       left: nil,
+                                                                                                       right: TreeNode(val: 9)
+                                                                                                      )
+                                                                                      )
+                                                                      )
+                                                      )
+                                       )
+                       )
+
+// Speed: O(N). Size: O(N)
 class Solution {
+  
+  typealias PathFromLCA = (Int, Character)
+  
+  private var lcaToStart: [PathFromLCA] = []
+  private var lcaToDest: [PathFromLCA] = []
+  
+  private func findLCA(curr: TreeNode, lastDirection: Character, target: Int, path: inout [PathFromLCA]) -> Bool {
+    path.append((curr.val, lastDirection))
     
-    /*class Path {
-        private var path: [[Int : String]] = []
-        
-        func
-    }*/
-    
-    typealias state = (val: Int, step:String)
-    
-    func findPath(to val: Int, root: TreeNode?) -> [state] {
-        guard let root = root else { return [] }
-        
-        func find(curr: TreeNode, path: inout [state]) -> [state]? {
-            if curr.val == val {
-                path.append((val, ""))
-                return path
-            } else {
-                if let left = curr.left {
-                    path.append((left.val, "L"))
-                    return find(curr: left, path: &path)
-                }
-                if let right = curr.right {
-                    path.append((right.val, "R"))
-                    return find(curr: right, path: &path)
-                }
-            }
-            return nil
-        }
-        
-        var path: [state] = []
-        return find(curr: root, path: &<#T##[Solution.state]#>)
+    if curr.val == target {
+      return true
     }
     
-    func getDirections(_ root: TreeNode?, _ startValue: Int, _ destValue: Int) -> String {
-        
-        
-        
-        fatalError()
+    if let left = curr.left, findLCA(curr: left, lastDirection: "L", target: target, path: &path) {
+      return true
     }
+    
+    if let right = curr.right, findLCA(curr: right, lastDirection: "R", target: target, path: &path) {
+      return true
+    }
+    
+    path.removeLast()
+    return false
+  }
+  
+  private func getDirections(_ path: [PathFromLCA]) -> String {
+    String(path.map { $0.1 }).trimmingCharacters(in: .whitespacesAndNewlines)
+  }
+  
+  func getDirections(_ root: TreeNode?, _ startValue: Int, _ destValue: Int) -> String {
+    guard let root = root else { return "" }
+    
+    lcaToStart = []
+    lcaToDest = []
+    guard findLCA(curr: root, lastDirection: " ", target: startValue, path: &lcaToStart),
+          findLCA(curr: root, lastDirection: " ", target: destValue, path: &lcaToDest) else {
+      return ""
+    }
+    
+    if let startIndexInDestLCA = (lcaToDest.firstIndex { $0.0 == startValue }) {
+      // Case 1: Start is parent of Dest
+      return String(String((lcaToDest[startIndexInDestLCA..<lcaToDest.endIndex].map { $0.1 })).dropFirst())
+    } else if let destIndexInStartLCA = (lcaToStart.firstIndex { $0.0 == destValue } ) {
+      // Case 2: Dest is parent of Start
+      return String(repeating: "U", count: lcaToStart.count - destIndexInStartLCA - 1)
+    } else {
+      // Case 3: Start and Dest has LCA
+      var lcaIndex = 0
+      while lcaIndex < min(lcaToStart.count, lcaToDest.count) && lcaToStart[lcaIndex] == lcaToDest[lcaIndex] {
+        lcaIndex += 1
+      }
+      return String(repeating: "U", count: lcaToStart.count - lcaIndex) + String((lcaToDest.map { $0.1 }).dropFirst(lcaIndex))
+    }
+  }
 }
 
-var root1 = TreeNode(5)
-root1.left = TreeNode(1, TreeNode(3), nil)
-root1.right = TreeNode(2, TreeNode(6), TreeNode(4))
-
-
+let solution = Solution()
+print(solution.getDirections(sample1, 3, 6))
+print(solution.getDirections(sample2, 2, 1))
+print(solution.getDirections(sample2, 1, 2))
+print(solution.getDirections(sample3, 6, 15))
